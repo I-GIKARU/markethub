@@ -22,8 +22,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-secret.package-lock.json
-secret.package.json
-package-lock.json
-package.json
 .env

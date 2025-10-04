@@ -1,0 +1,27 @@
+{
+  "login": [
+    {
+      "id": "3286",
+      "email": "tyu@gmail.com",
+      "password": "12345"
+    },
+    {
+      "id": "bb9d",
+      "email": "riko@gmail.com",
+      "password": "12345"
+    }
+  ],
+  "projects": [
+    {
+      "id": "a64d",
+      "title": "rty",
+      "description": "rt",
+      "githubLink": "https://demo/123",
+      "demoLink": "https://demo/123",
+      "forSale": true,
+      "price": "4567",
+      "imageUrl": "blob:http://localhost:5173/e4821549-ee01-4a66-9f50-a4276fe531ac",
+      "tech_stack": "React, Flask"
+    }
+  ]
+}

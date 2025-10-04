@@ -1,0 +1,13 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+deploy.sh
+# Virtual environments
+.venv
+.env
+innovation-marketplace-6c9b1-firebase-adminsdk-fbsvc-f3cfe0d068.json
+myenvfirebase_creds_temp.json

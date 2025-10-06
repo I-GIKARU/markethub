@@ -58,6 +58,7 @@ sudo -u postgres psql
 CREATE DATABASE markethub_db;
 CREATE USER markethub_user WITH PASSWORD 'your_secure_password_123';
 GRANT ALL PRIVILEGES ON DATABASE markethub_db TO markethub_user;
+ALTER USER markethub_user CREATEDB SUPERUSER;
 ALTER USER markethub_user CREATEDB;
 \q
 ```
@@ -89,6 +90,13 @@ mkdir -p /var/www/markethub
 cd /var/www/markethub
 
 # Clone repository
+ssh-keygen -t ed25519 -C "your_email@example.com"
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub
+ssh -T git@github.com
+
 git clone https://github.com/your-username/markethub.git .
 
 # Set permissions
@@ -102,7 +110,7 @@ chown -R www-data:www-data /var/www/markethub
 cd /var/www/markethub/server
 
 # Create virtual environment
-python3.11 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate
 
 # Install dependencies
@@ -123,6 +131,7 @@ JWT_SECRET_KEY=your_jwt_secret_key_change_this_in_production
 
 # Database Configuration
 DATABASE_URL=postgresql://markethub_user:your_secure_password_123@localhost:5432/markethub_db
+
 
 # Firebase Configuration
 FIREBASE_PROJECT_ID=your_firebase_project_id
@@ -146,7 +155,10 @@ cd /var/www/markethub/server
 source venv/bin/activate
 
 # Run migrations
+flask db init
+flask db migrate -m "Initial migration"
 flask db upgrade
+
 
 # Test the backend
 python app.py
@@ -228,6 +240,9 @@ npm run build
 
 ### Copy nginx configuration files
 ```bash
+mkdir -p /var/www/markethub/nginx && \
+touch /var/www/markethub/nginx/nginx.conf /var/www/markethub/nginx/client.conf /var/www/markethub/nginx/server.conf
+
 # Copy the nginx configuration files from your project
 cp /var/www/markethub/nginx/nginx.conf /etc/nginx/nginx.conf
 cp /var/www/markethub/nginx/client.conf /etc/nginx/sites-available/client

@@ -1,4 +1,4 @@
-# Innovation Marketplace
+# markethub
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15.4.1-black?logo=next.js)](https://nextjs.org/)
@@ -12,7 +12,7 @@
 
 ## 🚀 Overview
 
-The **Innovation Marketplace** connects innovative student projects with potential clients and collaborators, powered by a modern full-stack architecture. Here's a summary of the structure:
+The **markethub** connects innovative student projects with potential clients and collaborators, powered by a modern full-stack architecture. Here's a summary of the structure:
 
 #### Architecture
 
@@ -325,6 +325,6 @@ For support, email support@innovationmarketplace.com
 
 ---
 
-**Built with ❤️ by the Innovation Marketplace Team**
+**Built with ❤️ by the markethub Team**
 
 # markethub

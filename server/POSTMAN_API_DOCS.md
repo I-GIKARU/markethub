@@ -1,4 +1,4 @@
-# Innovation Marketplace API Documentation
+# markethub API Documentation
 
 ## Base URL
 ```
@@ -926,8 +926,8 @@ GET /api/merchandise?in_stock=true
 
 **Example Form Data:**
 ```
-name: Innovation Marketplace T-Shirt
-description: Official Innovation Marketplace branded t-shirt
+name: markethub T-Shirt
+description: Official markethub branded t-shirt
 price: 29.99
 quantity: 50
 image: [Select file: tshirt_image.png]
@@ -939,8 +939,8 @@ image: [Select file: tshirt_image.png]
   "message": "Merchandise created successfully",
   "merchandise": {
     "id": 7,
-    "name": "Innovation Marketplace T-Shirt",
-    "description": "Official Innovation Marketplace branded t-shirt",
+    "name": "markethub T-Shirt",
+    "description": "Official markethub branded t-shirt",
     "price": 29.99,
     "quantity": 50,
     "image_url": "https://innovation-marketplace.sfo3.digitaloceanspaces.com/merchandise/7/image_*.png",
@@ -1420,7 +1420,7 @@ GET /api/merchandise?in_stock=true
   "merchandise": [
     {
       "id": 6,
-      "name": "Innovation Marketplace T-Shirt",
+      "name": "markethub T-Shirt",
       "description": "Official branded t-shirt",
       "price": 25.99,
       "quantity": 10,
@@ -1445,7 +1445,7 @@ GET /api/merchandise?in_stock=true
 ```json
 {
   "id": 6,
-  "name": "Innovation Marketplace T-Shirt",
+  "name": "markethub T-Shirt",
   "description": "Official branded t-shirt",
   "price": 25.99,
   "quantity": 10,
@@ -1480,7 +1480,7 @@ GET /api/merchandise?in_stock=true
   "message": "Merchandise created successfully",
   "merchandise": {
     "id": 7,
-    "name": "Innovation Marketplace T-Shirt",
+    "name": "markethub T-Shirt",
     "description": "Official branded t-shirt",
     "price": 29.99,
     "quantity": 50,
@@ -1566,7 +1566,7 @@ Content-Type: application/json
           "price": 25.99,
           "merchandise": {
             "id": 6,
-            "name": "Innovation Marketplace T-Shirt"
+            "name": "markethub T-Shirt"
           }
         }
       ]
@@ -1602,7 +1602,7 @@ Content-Type: application/json
         "price": 25.99,
         "merchandise": {
           "id": 6,
-          "name": "Innovation Marketplace T-Shirt",
+          "name": "markethub T-Shirt",
           "description": "Official branded t-shirt"
         }
       }

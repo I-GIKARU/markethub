@@ -57,11 +57,10 @@ class Config:
     # Custom domain validation
     STUDENT_EMAIL_DOMAIN = '@student.moringaschool.com'
     
-    # Firebase/Google Cloud Configuration
+    # Firebase/Google Cloud Configuration (Auth only)
     FIREBASE_SERVICE_ACCOUNT_KEY = os.getenv('FIREBASE_SERVICE_ACCOUNT_KEY')  # Path to service account JSON
     GOOGLE_CREDENTIALS_JSON = os.getenv('GOOGLE_CREDENTIALS_JSON')  # JSON string for deployment
     FIREBASE_PROJECT_ID = os.getenv('FIREBASE_PROJECT_ID')
-    FIREBASE_STORAGE_BUCKET = os.getenv('FIREBASE_STORAGE_BUCKET', f"{os.getenv('FIREBASE_PROJECT_ID')}.firebasestorage.app")
     
     @staticmethod
     def get_firebase_credentials():

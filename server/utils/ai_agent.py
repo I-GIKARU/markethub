@@ -5,9 +5,8 @@ from datetime import datetime
 from flask import current_app
 from PyPDF2 import PdfReader
 import google.generativeai as genai
-import firebase_admin
-from firebase_admin import storage
 from io import BytesIO
+from .digitalocean_storage import init_digitalocean_client
 
 class AIAgent:
     def __init__(self):
@@ -18,12 +17,8 @@ class AIAgent:
         else:
             print("⚠️ GOOGLE_API_KEY not found. AI functionality will not be available.")
         
-        # Firebase storage bucket
-        try:
-            self.bucket = storage.bucket()
-        except Exception as e:
-            print(f"⚠️ Firebase storage initialization failed: {e}")
-            self.bucket = None
+        # DigitalOcean Spaces client (initialize lazily)
+        self.storage_client = None
         
         # In-memory text store for quick access
         self.pdf_text_store = {}
@@ -143,71 +138,18 @@ class AIAgent:
             print(f"Gemini question answering error: {e}")
             return "I'm sorry, I couldn't process your question due to an AI service error. Please try again later."
 
-    # AI documentation methods kept for CV functionality only
-    def upload_pdf_to_firebase(self, file_stream, file_type="cv"):
-        """Upload PDF to Firebase for AI processing (CVs only)"""
-        if not self.bucket:
-            raise Exception("Firebase storage not initialized")
-        
-        file_id = f"{uuid.uuid4()}.pdf"
-        blob_path = f"ai_documents/{file_type}/{file_id}"
-        blob = self.bucket.blob(blob_path)
-        
-        try:
-            # Reset stream position
-            file_stream.seek(0)
-            blob.upload_from_file(file_stream, content_type='application/pdf')
-            blob.make_public()
-            
-            return {
-                'file_id': file_id,
-                'url': blob.public_url,
-                'blob_path': blob_path
-            }
-        except Exception as e:
-            print(f"Firebase upload error: {e}")
-            raise Exception('Failed to upload to Firebase')
+    def _get_storage_client(self):
+        """Lazy initialization of DigitalOcean client"""
+        if not self.storage_client:
+            try:
+                self.storage_client = init_digitalocean_client()
+            except Exception as e:
+                print(f"Failed to initialize DigitalOcean client: {e}")
+                return None
+        return self.storage_client
 
-    def save_document_metadata(self, file_id: str, metadata: dict, file_type="cv"):
-        """Save document metadata to Firebase (CVs only)"""
-        if not self.bucket:
-            raise Exception("Firebase storage not initialized")
-        
-        metadata_blob = self.bucket.blob(f"ai_documents/{file_type}/{file_id}.json")
-        
-        try:
-            metadata_blob.upload_from_string(
-                data=json.dumps({
-                    **metadata,
-                    'uploaded_at': datetime.utcnow().isoformat(),
-                    'file_type': file_type
-                }),
-                content_type="application/json"
-            )
-        except Exception as e:
-            print(f"Failed to save metadata: {e}")
-            raise Exception('Could not save metadata')
-
-    def get_document_text(self, file_id: str, file_type="cv"):
-        """Retrieve document text from cache or Firebase (CVs only)"""
-        # Try from memory first
-        cache_key = f"{file_type}_{file_id}"
-        text = self.pdf_text_store.get(cache_key)
-        
-        if not text and self.bucket:
-            # Load from Firebase metadata
-            metadata_blob = self.bucket.blob(f"ai_documents/{file_type}/{file_id}.json")
-            if metadata_blob.exists():
-                try:
-                    metadata_str = metadata_blob.download_as_text()
-                    metadata = json.loads(metadata_str)
-                    text = metadata.get("text")
-                    if text:
-                        self.pdf_text_store[cache_key] = text  # Cache for future use
-                except Exception as e:
-                    print(f"Error loading document text: {e}")
-        
-        return text
+    # All file storage now handled by DigitalOcean Spaces
+    # Firebase methods removed - CVs use DigitalOcean integration
     
     def get_project_pdf_texts(self, project):
         """Extract text from all PDFs in a regular project's media"""
@@ -230,75 +172,24 @@ class AIAgent:
             print(f"❌ Failed to parse project PDF URLs for '{project.title}': {e}")
             return []
         
-        # Check if Firebase bucket is available
-        if not self.bucket:
-            print("❌ Firebase bucket not initialized - cannot read PDFs")
-            return []
+        # PDFs are now stored in DigitalOcean Spaces - text extraction not implemented
+        print("📄 PDF text extraction from DigitalOcean Spaces not yet implemented")
+        return []
         
         pdf_texts = []
         
-        for i, pdf_url in enumerate(pdf_urls):
-            try:
-                # Extract storage path from Firebase URL
-                storage_path = self._extract_storage_path_from_url(pdf_url)
-                if not storage_path:
-                    print(f"❌ Could not extract storage path from URL: {pdf_url}")
-                    continue
-                
-                # Create cache key for this PDF
-                cache_key = f"project_pdf_{storage_path}"
-                
-                # Check cache first
-                cached_text = self.pdf_text_store.get(cache_key)
-                if cached_text:
-                    print(f"✅ Found cached text for PDF {i+1} (length: {len(cached_text)})")
-                    pdf_texts.append(cached_text)
-                    continue
-                
-                # Download and extract text from PDF
-                print(f"📥 Downloading PDF {i+1} from Firebase: {storage_path}")
-                blob = self.bucket.blob(storage_path)
-                
-                if not blob.exists():
-                    print(f"❌ PDF not found in Firebase: {storage_path}")
-                    continue
-                
-                # Download PDF content
-                pdf_content = blob.download_as_bytes()
-                pdf_stream = BytesIO(pdf_content)
-                
-                # Extract text
-                text = self.extract_text_from_pdf(pdf_stream)
-                if text and text.strip():
-                    print(f"✅ Extracted text from PDF {i+1} (length: {len(text)})")
-                    # Cache the text
-                    self.pdf_text_store[cache_key] = text
-                    pdf_texts.append(text)
-                else:
-                    print(f"⚠️ No text extracted from PDF {i+1}")
-                    
-            except Exception as e:
-                print(f"❌ Error processing PDF {i+1}: {e}")
-                continue
-        
-        print(f"📄 Successfully extracted text from {len(pdf_texts)} PDFs")
-        return pdf_texts
+        # PDF text extraction from DigitalOcean Spaces not yet implemented
+        print("📄 PDF text extraction from DigitalOcean Spaces not yet implemented")
+        return []
     
     def _extract_storage_path_from_url(self, url):
-        """Extract Firebase storage path from download URL"""
+        """Extract DigitalOcean Spaces storage path from download URL"""
         try:
-            # Handle Firebase Storage REST API URLs
-            if 'firebasestorage.googleapis.com' in url and '/o/' in url:
-                from urllib.parse import unquote
-                # Extract path between /o/ and ?alt=media
-                path_part = url.split('/o/')[1].split('?')[0]
-                return unquote(path_part)
-            
-            # Handle direct Firebase Storage URLs
-            elif 'appspot.com' in url:
+            # Handle DigitalOcean Spaces URLs
+            if 'digitaloceanspaces.com' in url:
                 # Extract path after domain
-                parts = url.split('appspot.com/')[-1].split('?')[0]
-                return parts
+                path_part = url.split('.com/')[1] if '.com/' in url else url
+                return path_part
             
             return None
             
@@ -307,24 +198,9 @@ class AIAgent:
             return None
 
     def delete_document(self, file_id: str, file_type="general"):
-        """Delete document and metadata from Firebase"""
-        if not self.bucket:
-            return
-        
+        """Delete document - now handled by DigitalOcean Spaces"""
         cache_key = f"{file_type}_{file_id}"
         self.pdf_text_store.pop(cache_key, None)
-        
-        try:
-            # Delete PDF file
-            pdf_blob = self.bucket.blob(f"ai_documents/{file_type}/{file_id}")
-            if pdf_blob.exists():
-                pdf_blob.delete()
-            
-            # Delete metadata file
-            metadata_blob = self.bucket.blob(f"ai_documents/{file_type}/{file_id}.json")
-            if metadata_blob.exists():
-                metadata_blob.delete()
-        except Exception as e:
-            print(f"Delete error: {e}")
+        print(f"Document deletion for {file_type} {file_id} - handled by DigitalOcean")
 
 ai_agent = AIAgent()

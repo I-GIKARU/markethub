@@ -50,12 +50,11 @@ def create_app():
                 
                 if cred:
                     firebase_admin.initialize_app(cred)
-                    print(f"✅ Firebase Admin SDK initialized for authentication")
-                    print(f"✅ Project ID: {project_id}")
+                    print(f"✅ Firebase initialized")
                 else:
-                    print("⚠️ Firebase credentials not found - Firebase auth disabled")
+                    print("⚠️ Firebase credentials not found")
             else:
-                print("⚠️ FIREBASE_PROJECT_ID not found - Firebase auth disabled")
+                print("⚠️ FIREBASE_PROJECT_ID not found")
     except Exception as e:
         print(f"⚠️ Firebase initialization failed: {e}")
 
@@ -66,19 +65,19 @@ def create_app():
             if client:
                 print(f"✅ DigitalOcean Spaces configured")
             else:
-                print(f"⚠️ DigitalOcean Spaces not configured - check environment variables")
+                print(f"⚠️ DigitalOcean Spaces not configured")
     except Exception as e:
-        print(f"⚠️ DigitalOcean Spaces configuration error: {e}")
+        print(f"⚠️ DigitalOcean Spaces error: {e}")
     
     # Initialize Flask-Mail
     try:
         init_mail(app)
         if app.config.get('MAIL_USERNAME'):
-            print(f"✅ Flask-Mail initialized with username: {app.config.get('MAIL_USERNAME')}")
+            print(f"✅ Email configured")
         else:
-            print(f"⚠️ Flask-Mail initialized but no MAIL_USERNAME configured")
+            print(f"⚠️ Email not configured")
     except Exception as e:
-        print(f"⚠️ Flask-Mail initialization failed: {e}")
+        print(f"⚠️ Email initialization failed: {e}")
 
     api = Api(app)
 
@@ -88,7 +87,6 @@ def create_app():
     from resources.merch import setup_routes as merchandise_setup_routes
     from resources.sales import setup_routes as sales_setup_routes
     from resources.user_projects import setuser_project_routes as user_projects_setup_routes
-    from resources.migrate import setup_routes as migrate_setup_routes
     from resources.ai_agent import setup_ai_routes
     from resources.mpesa import setup_routes as mpesa_setup_routes
     from resources.contributions import setup_routes as contributions_setup_routes
@@ -100,56 +98,52 @@ def create_app():
     merchandise_setup_routes(api)
     sales_setup_routes(api)
     user_projects_setup_routes(api)
-    migrate_setup_routes(api)
     setup_ai_routes(api)
     mpesa_setup_routes(api)
     contributions_setup_routes(api)
     
-    # ✅ Create default roles on app startup  
-    # Use a background function to avoid blocking the main thread
-    def setup_default_roles():
-        with app.app_context():
-            try:
-                # Quick check if database is accessible
-                from sqlalchemy import text
-                db.session.execute(text('SELECT 1')).fetchone()
-                
-                # Check if tables exist before querying
-                from sqlalchemy import inspect
-                inspector = inspect(db.engine)
-                if 'roles' in inspector.get_table_names():
-                    # Create all roles if they don't exist
-                    roles_to_create = [
-                        {'name': 'admin', 'desc': 'Administrator role'},
-                        {'name': 'student', 'desc': 'Student developer'},
-                        {'name': 'client', 'desc': 'Client user'}
-                    ]
-                    
-                    created_roles = []
-                    for role_data in roles_to_create:
-                        existing_role = Role.query.filter_by(name=role_data['name']).first()
-                        if not existing_role:
-                            new_role = Role(name=role_data['name'], desc=role_data['desc'])
-                            db.session.add(new_role)
-                            created_roles.append(role_data['name'])
-                    
-                    if created_roles:
-                        db.session.commit()
-                        print(f"✅ Created roles: {', '.join(created_roles)}")
-                    else:
-                        print("ℹ️ Default roles already exist")
-                    
-                    print("ℹ️ Admin users must be created through Firebase Console and then registered via the app")
-                else:
-                    print("⚠️ Database tables don't exist yet.")
-                    print("Run 'flask db init', 'flask db migrate', and 'flask db upgrade' to set up the database.")
-            except Exception as e:
-                print(f"⚠️ Database not ready: {e}")
-                print("Run 'flask db init', 'flask db migrate', and 'flask db upgrade' to set up the database.")
+    # Health check endpoint
+    @app.route('/api/health')
+    def health_check():
+        return {'status': 'healthy', 'message': 'Markethub API is running'}, 200
     
-    # Setup roles in background to avoid blocking server startup
-    import threading
-    threading.Thread(target=setup_default_roles, daemon=True).start()
+    # ✅ Initialize database and run migrations on startup
+    with app.app_context():
+        try:
+            from flask_migrate import upgrade
+            # Run migrations automatically
+            upgrade()
+            print("✅ Database migrations applied")
+            
+            # Create default roles
+            roles_to_create = [
+                {'name': 'admin', 'desc': 'Administrator role'},
+                {'name': 'student', 'desc': 'Student developer'},
+                {'name': 'client', 'desc': 'Client user'}
+            ]
+            
+            created_roles = []
+            for role_data in roles_to_create:
+                existing_role = Role.query.filter_by(name=role_data['name']).first()
+                if not existing_role:
+                    new_role = Role(name=role_data['name'], desc=role_data['desc'])
+                    db.session.add(new_role)
+                    created_roles.append(role_data['name'])
+            
+            if created_roles:
+                db.session.commit()
+                print(f"✅ Created roles: {', '.join(created_roles)}")
+            else:
+                print("ℹ️ Default roles exist")
+                
+        except Exception as e:
+            print(f"⚠️ Migration error: {e}")
+            # Fallback to create_all if migrations fail
+            try:
+                db.create_all()
+                print("✅ Database tables created")
+            except Exception as e:
+                print(f"⚠️ Database setup failed: {e}")
 
     return app
 

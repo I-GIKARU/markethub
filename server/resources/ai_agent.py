@@ -30,47 +30,52 @@ class CVUploadResource(Resource):
             return {'error': 'Only PDF files are allowed for CVs'}, 400
         
         try:
-            # Extract text from PDF
+            # Try to extract text from PDF
             text = ai_agent.extract_text_from_pdf(file.stream)
             if not text:
-                return {'error': 'Failed to extract text from CV'}, 500
+                # If extraction fails, use placeholder text
+                text = f"CV uploaded by {user.email} - Text extraction not available"
             
-            # Upload PDF to Firebase
-            file_info = ai_agent.upload_pdf_to_firebase(file.stream, file_type="cv")
+            # Upload PDF to DigitalOcean Spaces
+            from utils.digitalocean_storage import upload_file_to_digitalocean
+            import uuid
+            
+            file.stream.seek(0)  # Reset stream position
+            filename_prefix = f"cv_{uuid.uuid4().hex}"
+            folder_path = f"cvs/{user.id}"
+            
+            success, file_info = upload_file_to_digitalocean(
+                file,
+                folder_path,
+                filename_prefix,
+                optimize_images=False
+            )
+            
+            if not success:
+                return {'error': f'File upload failed: {file_info}'}, 500
             
             # Generate AI summary
             summary = ai_agent.generate_cv_summary(text)
             
-            # Save metadata to Firebase
-            metadata = {
-                "file_id": file_info['file_id'],
-                "user_id": user.id,
-                "user_email": user.email,
-                "summary": summary,
-                "url": file_info['url'],
-                "text": text,
-                "filename": file.filename
-            }
-            
-            ai_agent.save_document_metadata(file_info['file_id'], metadata, file_type="cv")
-            
             # Update user record
             user.cv_url = file_info['url']
             user.cv_summary = summary
-            user.cv_file_id = file_info['file_id']
+            user.cv_file_id = file_info['filename']
             user.cv_uploaded_at = datetime.utcnow()
             
             db.session.commit()
             
             return {
                 'message': 'CV uploaded successfully',
-                'file_id': file_info['file_id'],
+                'filename': file_info['filename'],
                 'summary': summary,
                 'url': file_info['url']
             }, 201
             
         except Exception as e:
             print(f"CV upload error: {e}")
+            import traceback
+            traceback.print_exc()
             return {'error': 'Failed to process CV upload'}, 500
 
 class CVQuestionResource(Resource):
@@ -102,10 +107,8 @@ class CVQuestionResource(Resource):
             return {"error": "Question is required"}, 400
         
         try:
-            # Get CV text
-            text = ai_agent.get_document_text(target_user.cv_file_id, file_type="cv")
-            if not text:
-                return {"error": "CV content not available"}, 500
+            # Use stored CV summary as the text content
+            text = target_user.cv_summary or "No CV content available"
             
             # Generate answer using AI
             answer = ai_agent.answer_project_question(

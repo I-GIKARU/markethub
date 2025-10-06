@@ -1,8 +1,8 @@
-"""Initial SQLite migration
+"""Initial migration
 
-Revision ID: 44c605f70c16
+Revision ID: 171401a2ead9
 Revises: 
-Create Date: 2025-09-23 20:23:24.880620
+Create Date: 2025-10-06 09:48:52.427370
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '44c605f70c16'
+revision = '171401a2ead9'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -71,7 +71,8 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sa.String(length=120), nullable=False),
     sa.Column('phone', sa.String(length=20), nullable=True),
-    sa.Column('firebase_uid', sa.String(length=128), nullable=False),
+    sa.Column('password_hash', sa.String(length=255), nullable=True),
+    sa.Column('firebase_uid', sa.String(length=128), nullable=True),
     sa.Column('auth_provider', sa.String(length=20), nullable=True),
     sa.Column('bio', sa.Text(), nullable=True),
     sa.Column('socials', sa.String(length=255), nullable=True),

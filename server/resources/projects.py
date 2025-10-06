@@ -8,7 +8,8 @@ from utils.digitalocean_storage import (
     upload_file_to_digitalocean, 
     upload_multiple_files, 
     sanitize_folder_name,
-    delete_folder_from_digitalocean
+    delete_folder_from_digitalocean,
+    delete_file_from_digitalocean
 )
 from datetime import date
 import json
@@ -771,20 +772,18 @@ class ProjectMediaDelete(Resource):
             message = ""
             
             if media_type == 'video':
-                # Videos are stored in Firebase
-                # Extract Firebase storage path from URL
-                if 'firebasestorage.googleapis.com' in media_url:
-                    # Extract path from Firebase URL
-                    import urllib.parse
-                    parsed_url = urllib.parse.urlparse(media_url)
-                    path_parts = parsed_url.path.split('/o/')[1].split('?')[0]  # Get path after /o/ and before ?
-                    storage_path = urllib.parse.unquote(path_parts)  # Decode URL encoding
+                # Videos are stored in DigitalOcean Spaces
+                # Extract DigitalOcean storage path from URL
+                if 'digitaloceanspaces.com' in media_url:
+                    # Extract path from DigitalOcean URL
+                    path_parts = media_url.split('.com/')[1] if '.com/' in media_url else media_url
+                    storage_path = path_parts
                 else:
                     # Fallback - construct path
                     filename = media_url.split('/')[-1] if '/' in media_url else media_url
                     storage_path = f"projects/{sanitized_name}-{project_id}/{filename}"
                 
-                success, message = delete_file_from_firebase(storage_path)
+                success, message = delete_file_from_digitalocean(storage_path)
             else:
                 # Images and thumbnails are stored in Cloudinary
                 # Extract Cloudinary public ID from URL or construct it
